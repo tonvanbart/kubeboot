@@ -20,6 +20,21 @@ Reading a value back:
     
     10.0
     
+The app includes the Spring Actuator endpoints, for example:
+
+    ~ $ http localhost:8080/actuator/health
+     
+    HTTP/1.1 200
+    Content-Type: application/vnd.spring-boot.actuator.v2+json;charset=UTF-8
+    Date: Thu, 03 Jan 2019 22:11:25 GMT
+    Transfer-Encoding: chunked
+    
+    {
+        "status": "UP"
+    }
+    
+If the app is not able to reach Redis, the status will be shown as `DOWN`.
+    
 ### Running in docker-compose
 
 Build the application jarfile:
