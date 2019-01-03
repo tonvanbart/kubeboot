@@ -49,6 +49,10 @@ Rebuild the container and start the compose:
 Note: just `docker-compose up` should work, however it will not rebuild the application container in all cases.
 The app will be exposed on port 9999. See [docker-compose.yaml](docker-compose.yaml) for details.
 
+One point to note is that the port forward on the `keyvalue` service is not necessary for the compose to work; the port
+would be exposed on the internal network anyway. However forwarding it means that you can connect locally using `redis-cli`
+to poke around. 
+
 ### Running on Kubernetes
 
 _*TBD*_
