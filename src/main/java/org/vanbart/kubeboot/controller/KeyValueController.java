@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -27,11 +27,14 @@ public class KeyValueController {
     }
 
     @RequestMapping(value = "/value/{key}", method = GET)
-    public Float getValue(@PathVariable("key") String key) {
+    public ResponseEntity<Float> getValue(@PathVariable("key") String key) {
         log.info("getValue({})", key);
-        Optional<Float> result = Optional.ofNullable(redisTemplate.opsForValue().get(key));
-        result.ifPresent(res -> log.info("got result: {}", res));
-        return result.orElse(-1F);
+        Float result = redisTemplate.opsForValue().get(key);
+        if (result != null) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @RequestMapping(value = "/value/{key}", method = POST)
