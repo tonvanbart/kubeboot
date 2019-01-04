@@ -3,10 +3,10 @@ kind: Service
 metadata:
   name: connexion-example-redis
   labels:
-    application: connexion-example
+    application: kubeboot
 spec:
   selector:
-    application: connexion-example
+    application: kubeboot
     # we need to select the right pods: filter by component label
     component: redis
   # Redis is only used from within the cluster
