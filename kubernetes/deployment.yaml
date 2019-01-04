@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeboot
+spec:
+  # run at least two replicas for high availability
+  replicas: 1
+  selector:
+    matchLabels:
+      application: kubeboot
+      # our app has both Connexion and Redis pods, make sure we separate them by label
+      component: frontend
+  template:
+    metadata:
+      labels:
+        application: kubeboot
+        # our app has both Connexion and Redis pods, make sure we separate them by label
+        component: frontend
+    spec:
+      containers:
+        - name: kubeboot
+          # Docker image to be build with Minikube's Docker daemon (minikube docker-env)
+          # see README.md on how to build
+          image: kubeboot:minikube
+          imagePullPolicy: Never
+          env:
+            - name: SPRING_REDIS_HOST
+              # point to our Redis service (see redis-service.yaml)
+              value: "connexion-example-redis"
+
+          ports:
+            - containerPort: 8080
+          # health check to make sure only healthy pods receive traffic
+#          readinessProbe:
+#            httpGet:
+#              path: /actuator/health
+#              port: 8080
+#          volumeMounts:
+#            - name: podinfo
+#              mountPath: /etc/podinfo
+#              readOnly: false
+      volumes:
+        - name: podinfo
+          downwardAPI:
+            items:
+              - path: uid
+                fieldRef:
+                  fieldPath: metadata.uid

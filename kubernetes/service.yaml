@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubebootsvc
+  labels:
+    application: kubeboot
+spec:
+  selector:
+    application: kubeboot
+    # select the Connexion pods (we would also match Redis pods without this label)
+    component: frontend
+  # use NodePort to expose service for Minikube
+  type: NodePort
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+
