@@ -31,10 +31,10 @@ spec:
           ports:
             - containerPort: 8080
           # health check to make sure only healthy pods receive traffic
-#          readinessProbe:
-#            httpGet:
-#              path: /actuator/health
-#              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
 #          volumeMounts:
 #            - name: podinfo
 #              mountPath: /etc/podinfo
