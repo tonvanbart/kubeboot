@@ -55,4 +55,27 @@ to poke around.
 
 ### Running on Kubernetes
 
-_*TBD*_
+    kubectl apply -f kubernetes/
+
+The Kubernetes deployment uses the Spring Actuator `/health` endpoint as a readiness probe, the pod
+will become ready once the connection to Redis is established and the status becomes `UP` (see above).
+
+To get the URL to access on Minikube:
+
+    url=$(minikube service kubebootsvc --url)
+    http $url/actuator/health
+    http $url/value/foo
+    
+The Kubernetes deploy creates 2 replicas of the pod, and the code adds a custom header 
+`X-Pod-IP` with the
+internal IP of the pod that serviced your request (so you can see the load balancing in action):
+
+    http $url/value/foo
+    
+    HTTP/1.1 200 
+    Content-Type: application/json;charset=UTF-8
+    Date: Sat, 05 Jan 2019 00:20:20 GMT
+    Transfer-Encoding: chunked
+    X-Pod-IP: 172.17.0.10
+    
+    3.14
