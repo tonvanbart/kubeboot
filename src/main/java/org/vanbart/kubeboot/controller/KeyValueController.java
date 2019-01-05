@@ -3,7 +3,9 @@ package org.vanbart.kubeboot.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +22,9 @@ public class KeyValueController {
 
     private RedisTemplate<String, Float> redisTemplate;
 
+    @Value("${MY_POD_IP:not_found}")
+    private String myPodIp;
+
     @Autowired
     public KeyValueController(RedisTemplate<String, Float> redisTemplate) {
         log.info("KeyValueController({})", redisTemplate);
@@ -30,10 +35,12 @@ public class KeyValueController {
     public ResponseEntity<Float> getValue(@PathVariable("key") String key) {
         log.info("getValue({})", key);
         Float result = redisTemplate.opsForValue().get(key);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Pod-IP", myPodIp);
         if (result != null) {
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok().headers(headers).body(result);
         } else {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.notFound().headers(headers).build();
         }
     }
 
