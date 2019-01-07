@@ -1,0 +1,139 @@
+# Complete set of Kubernetes definitions for the Boot application and key/value store.
+
+# Service definition for Redis. This is only exposed inside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: keyvalue-srv
+  labels:
+    application: kubeboot
+spec:
+  selector:
+    # group all services under application label, component selects individual services
+    application: kubeboot
+    component: redis
+  # Redis is only used from within the cluster, no NodePort is needed
+  type: ClusterIP
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+
+---
+# Deployment definition for the Redis pods. This stores data in a persistent volume, since it is
+# not stateless it is defined as a StatefulSet.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: keyvalue
+spec:
+  # our Redis setup is not highly available and only has a single master
+  replicas: 1
+  selector:
+    matchLabels:
+      # application and component labels match service above.
+      application: kubeboot
+      component: redis
+  serviceName: keyvalue-srv
+  template:
+    metadata:
+      labels:
+        # both application and component labels are used for the match
+        application: kubeboot
+        component: redis
+    spec:
+      containers:
+      - name: redis
+        # use the official Redis image (smaller Alpine edition)
+        image: redis:4-alpine
+        # configure persistence (the Redis default config has persistence disabled by default)
+        args: ["--appendonly", "yes", "--save", "900", "1", "--save", "30", "2"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        # mount our persistent volume (defined below as volumeClaimTemplate)
+        - name: data
+          # the official Redis image uses /data by default
+          mountPath: /data
+  # every pod will get a PersistentVolume as per the following template.
+  # note the storageclassname, this can be omitted to get the default storage class for the cluster.
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: standard
+      resources:
+        requests:
+          # 1GiB storage is more than enough for our example
+          storage: 1Gi
+
+---
+# Service definition for the Spring Boot application. This will be exposed outside.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubebootsvc
+  labels:
+    application: kubeboot
+spec:
+  selector:
+    # the application label is the same; the component label will select the pods which are running the Boot app.
+    application: kubeboot
+    component: frontend
+  # use LoadBalancer to expose service. In Docker for OSX this will expose the service on localhost
+  # port 80; on Minikube you have to retrieve the IP or define an ingress.
+  type: LoadBalancer
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+
+---
+# Deployment definition for the Spring Boot pods. Since the app is stateless use Deployment instead
+# of StatefulSet.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeboot
+spec:
+  # run two replicas for high availability
+  replicas: 2
+  selector:
+    matchLabels:
+      # indicate same application, but frontend component
+      application: kubeboot
+      component: frontend
+  template:
+    metadata:
+      labels:
+        # our app has both Connexion and Redis pods, make sure we separate them by label
+        application: kubeboot
+        component: frontend
+    spec:
+      containers:
+      - name: kubeboot
+        # Docker image to be build with Minikube's Docker daemon (minikube docker-env)
+        # see README.md on how to build, and never try to pull the image
+        image: kubeboot:minikube
+        imagePullPolicy: Never
+        env:
+        # overrides spring.redis.host inside application.properties
+        # points to the name of the Redis service
+        - name: SPRING_REDIS_HOST
+          value: "keyvalue-srv"
+        # make Pod IP visible in the environment var to be picked up by Boot
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+
+        ports:
+        - containerPort: 8080
+        # use Boot Actuator for readiness probe. This implies a Pod will not be ready
+        # until it has successfully connected to Redis.
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080

@@ -9,8 +9,9 @@ spec:
     application: kubeboot
     # select the Connexion pods (we would also match Redis pods without this label)
     component: frontend
-  # use NodePort to expose service for Minikube
-  type: NodePort
+  # use LoadBalancer to expose service for Minikube, this also creates a NodePort
+  # on Docker for OSX this exposes the service on localhost, on Minikube use Nodeport
+  type: LoadBalancer
   ports:
     - port: 80
       protocol: TCP
