@@ -25,7 +25,7 @@ spec:
           imagePullPolicy: Never
           env:
             - name: SPRING_REDIS_HOST
-              # point to our Redis service (see redis-service.yaml)
+              # point to our Redis service (see redis-boot-service.yaml)
               value: "connexion-example-redis"
             - name: MY_POD_IP
               valueFrom:
